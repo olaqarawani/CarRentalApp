@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -27,9 +28,10 @@ class _ManageCarsScreenState extends State<ManageCarsScreen> {
   Future<void> fetchCars() async {
     setState(() => loading = true);
 
-    final res = await http.get(Uri.parse('$baseUrl/cars.php'));
-    final List data = json.decode(res.body);
+    final res = await http.get(Uri.parse('$baseUrl/cars'));
+    final data = json.decode(res.body) as List;
 
+    if (!mounted) return;
     setState(() {
       cars = data.map((e) => Car.fromJson(e)).toList();
       loading = false;
@@ -38,43 +40,40 @@ class _ManageCarsScreenState extends State<ManageCarsScreen> {
 
   Future<void> deleteCar(int id) async {
     await http.delete(
-      Uri.parse('$baseUrl/cars.php'),
+      Uri.parse('$baseUrl/cars'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'id': id}),
     );
-    fetchCars();
+    await fetchCars();
   }
 
-  void confirmDelete(int carId) {
-    showDialog(
+  Future<void> confirmDelete(int carId) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Car'),
-        content: const Text('Are you sure you want to delete this car?'),
+        title: const Text('Delete car'),
+        content: const Text('This vehicle will be removed from the catalog.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.pop(context);
-              deleteCar(carId);
-            },
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) await deleteCar(carId);
   }
 
-  /// 🔧 FIXED: نرجّع Map مطابق تمامًا للي AddEditCarScreen متوقعه
   Map<String, dynamic> _carToMap(Car car) {
     return {
       'id': car.id,
       'type': car.type,
-      'price_per_day': car.pricePerDay.toString(), // مهم
+      'price_per_day': car.pricePerDay.toString(),
       'description': car.description,
       'available': car.available ? '1' : '0',
       'image': car.image,
@@ -85,13 +84,12 @@ class _ManageCarsScreenState extends State<ManageCarsScreen> {
     final updated = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AddEditCarScreen(
-          car: car == null ? null : _carToMap(car),
-        ),
+        builder: (_) =>
+            AddEditCarScreen(car: car == null ? null : _carToMap(car)),
       ),
     );
 
-    if (updated == true) fetchCars();
+    if (updated == true) await fetchCars();
   }
 
   @override
@@ -101,60 +99,53 @@ class _ManageCarsScreenState extends State<ManageCarsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => openAddEdit(null),
         icon: const Icon(Icons.add),
-        label: const Text('Add Car'),
+        label: const Text('Add car'),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: cars.length,
-              itemBuilder: (_, i) {
-                final car = cars[i];
+          : RefreshIndicator(
+              onRefresh: fetchCars,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: cars.length,
+                itemBuilder: (_, i) {
+                  final car = cars[i];
 
-                return Stack(
-                  children: [
-                    /// ✅ نفس كرت الكاستمر
-                    CarCard(
-                      car: car,
-                      onTap: () {}, // الأدمن ما بيفتح details
-                    ),
-
-                    /// 🔐 Admin actions
-                    Positioned(
-                      top: 14,
-                      right: 14,
-                      child: Container(
-                        decoration: BoxDecoration(
+                  return Stack(
+                    children: [
+                      CarCard(car: car, onTap: () => openAddEdit(car)),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 20),
-                              onPressed: () => openAddEdit(car),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Colors.red,
-                                size: 20,
+                          borderRadius: BorderRadius.circular(8),
+                          elevation: 2,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Edit',
+                                icon: const Icon(Icons.edit_outlined, size: 20),
+                                onPressed: () => openAddEdit(car),
                               ),
-                              onPressed: () => confirmDelete(car.id),
-                            ),
-                          ],
+                              IconButton(
+                                tooltip: 'Delete',
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                onPressed: () => confirmDelete(car.id),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
     );
   }

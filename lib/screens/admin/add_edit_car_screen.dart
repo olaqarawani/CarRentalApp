@@ -46,7 +46,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
   Future<String?> uploadImage(File image) async {
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('$baseUrl/upload_image.php'),
+      Uri.parse('$baseUrl/upload-image'),
     );
     request.files.add(await http.MultipartFile.fromPath('image', image.path));
     final res = await request.send();
@@ -86,13 +86,13 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
 
     if (widget.car == null) {
       await http.post(
-        Uri.parse('$baseUrl/cars.php'),
+        Uri.parse('$baseUrl/cars'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(data),
       );
     } else {
       await http.put(
-        Uri.parse('$baseUrl/cars.php'),
+        Uri.parse('$baseUrl/cars'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(data),
       );
@@ -138,8 +138,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
             if (value == null || value.trim().isEmpty) {
               return '$label is required';
             }
-            if (label == 'Daily Price' &&
-                double.tryParse(value) == null) {
+            if (label == 'Daily Price' && double.tryParse(value) == null) {
               return 'Enter a valid number';
             }
             return null;
@@ -155,9 +154,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
-      appBar: AppBar(
-        title: Text(isEdit ? 'Edit Vehicle' : 'Add Vehicle'),
-      ),
+      appBar: AppBar(title: Text(isEdit ? 'Edit Vehicle' : 'Add Vehicle')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -180,13 +177,11 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
                             fit: BoxFit.cover,
                           )
                         : existingImage != null
-                            ? DecorationImage(
-                                image: NetworkImage(
-                                  '$imagesUrl/$existingImage',
-                                ),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                        ? DecorationImage(
+                            image: NetworkImage('$imagesUrl/$existingImage'),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
                   child: imageFile == null && existingImage == null
                       ? Column(
@@ -218,10 +213,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
 
               const SizedBox(height: 24),
 
-              _inputField(
-                controller: typeCtrl,
-                label: 'Car Type',
-              ),
+              _inputField(controller: typeCtrl, label: 'Car Type'),
               const SizedBox(height: 12),
               _inputField(
                 controller: priceCtrl,
@@ -260,9 +252,7 @@ class _AddEditCarScreenState extends State<AddEditCarScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : Text(isEdit
-                          ? 'Update Vehicle'
-                          : 'Add Vehicle'),
+                      : Text(isEdit ? 'Update Vehicle' : 'Add Vehicle'),
                 ),
               ),
             ],

@@ -56,10 +56,10 @@ class BookingDetailsScreen extends StatelessWidget {
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -117,28 +117,37 @@ class BookingDetailsScreen extends StatelessWidget {
                         if (confirm != true) return;
 
                         try {
-                          final res = await BookingService.cancelBooking(bookingId);
+                          final res = await BookingService.cancelBooking(
+                            bookingId,
+                          );
 
                           if (res["success"] == true) {
                             if (!context.mounted) return;
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Booking cancelled successfully")),
+                              const SnackBar(
+                                content: Text("Booking cancelled successfully"),
+                              ),
                             );
 
                             Navigator.pop(context, true);
                           } else {
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(res["message"] ?? "Cancel failed")),
+                              SnackBar(
+                                content: Text(
+                                  res["message"] ?? "Cancel failed",
+                                ),
+                              ),
                             );
                           }
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error: $e")),
-                          );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text("Error: $e")));
                         }
                       },
-
 
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red.shade700,

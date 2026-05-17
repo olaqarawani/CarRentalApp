@@ -1,12 +1,11 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../core/constants.dart';
 
 class AuthService {
-  static const baseUrl = 'http://192.168.1.16/car_rental_api';
-
   static Future<Map?> login(String email, String password) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/login.php'),
+      Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
     );

@@ -22,14 +22,14 @@ class _ManageBookingsScreenState extends State<ManageBookingsScreen> {
 
   Future<void> fetchBookings() async {
     setState(() => loading = true);
-    final res = await http.get(Uri.parse('$baseUrl/bookings.php'));
+    final res = await http.get(Uri.parse('$baseUrl/bookings'));
     bookings = json.decode(res.body);
     setState(() => loading = false);
   }
 
   Future<void> updateStatus(int id, String status) async {
     await http.put(
-      Uri.parse('$baseUrl/bookings.php'),
+      Uri.parse('$baseUrl/bookings'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'id': id, 'status': status}),
     );
@@ -73,10 +73,8 @@ class _ManageBookingsScreenState extends State<ManageBookingsScreen> {
               itemCount: bookings.length,
               itemBuilder: (_, i) {
                 final b = bookings[i];
-                final status =
-                    (b['status'] ?? '').toString().toLowerCase();
-                final decided =
-                    status == 'approved' || status == 'rejected';
+                final status = (b['status'] ?? '').toString().toLowerCase();
+                final decided = status == 'approved' || status == 'rejected';
 
                 return Stack(
                   children: [
@@ -102,13 +100,14 @@ class _ManageBookingsScreenState extends State<ManageBookingsScreen> {
                                   child: Image.network(
                                     '$imagesUrl/${b['image']}',
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
+                                    errorBuilder: (_, error, stackTrace) =>
                                         Container(
-                                      color: Colors.grey.shade200,
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                          Icons.image_not_supported),
-                                    ),
+                                          color: Colors.grey.shade200,
+                                          alignment: Alignment.center,
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                          ),
+                                        ),
                                   ),
                                 ),
                               ),
@@ -129,7 +128,6 @@ class _ManageBookingsScreenState extends State<ManageBookingsScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  
                                 ],
                               ),
 
@@ -170,7 +168,7 @@ class _ManageBookingsScreenState extends State<ManageBookingsScreen> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
+                                color: Colors.black.withValues(alpha: 0.12),
                                 blurRadius: 8,
                               ),
                             ],
@@ -241,11 +239,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700),
       ),
     );
   }

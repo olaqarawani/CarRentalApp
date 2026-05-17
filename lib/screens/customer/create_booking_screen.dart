@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'pickup_dropoff_screen.dart';
 import 'customer_profile_screen.dart';
+import 'pickup_dropoff_screen.dart';
 
 class CreateBookingScreen extends StatefulWidget {
   const CreateBookingScreen({super.key});
@@ -18,6 +18,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
   int carId = 0;
   String carName = '';
   int dailyPrice = 0;
+  bool loadingCar = true;
 
   @override
   void initState() {
@@ -27,11 +28,13 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
   Future<void> _loadCarFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
 
     setState(() {
       carId = prefs.getInt('booking_car_id') ?? 0;
       carName = prefs.getString('booking_car_name') ?? '';
       dailyPrice = prefs.getInt('booking_daily_price') ?? 0;
+      loadingCar = false;
     });
   }
 
@@ -43,34 +46,23 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
   int get totalPrice => totalDays * dailyPrice;
 
   String _fmt(DateTime? d) {
-    if (d == null) return "Select date";
-    return "${d.day.toString().padLeft(2, '0')}/"
-        "${d.month.toString().padLeft(2, '0')}/"
-        "${d.year}";
+    if (d == null) return 'Select date';
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/'
+        '${d.year}';
   }
 
   Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
     final initial = isStart
-        ? (startDate ?? DateTime.now())
-        : (endDate ?? startDate ?? DateTime.now());
+        ? (startDate ?? now)
+        : (endDate ?? startDate ?? now);
 
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.lightBlue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 2),
     );
 
     if (picked == null) return;
@@ -78,14 +70,10 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
     setState(() {
       if (isStart) {
         startDate = picked;
-        if (endDate != null && endDate!.isBefore(startDate!)) {
-          endDate = null;
-        }
+        if (endDate != null && endDate!.isBefore(startDate!)) endDate = null;
       } else {
         if (startDate != null && picked.isBefore(startDate!)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("End date must be after start date")),
-          );
+          _showMessage('End date must be after the start date');
           return;
         }
         endDate = picked;
@@ -93,11 +81,14 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
     });
   }
 
-  Future<void> _continue() async {
-    if (carId == 0 || startDate == null || endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Missing booking information")),
-      );
+  void _continue() {
+    if (carId == 0 || dailyPrice <= 0) {
+      _showMessage('Choose a car before creating a booking');
+      return;
+    }
+
+    if (startDate == null || endDate == null) {
+      _showMessage('Select pickup and return dates');
       return;
     }
 
@@ -115,23 +106,24 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
     );
   }
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final canContinue = startDate != null && endDate != null;
+    final colors = Theme.of(context).colorScheme;
+    final canContinue = startDate != null && endDate != null && carId != 0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.lightBlue,
-        elevation: 0,
-        title: const Text(
-          "Create Booking",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
+        title: const Text('Create Booking'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person, color: Colors.white),
+            tooltip: 'Profile',
+            icon: const Icon(Icons.person_outline),
             onPressed: () {
               Navigator.push(
                 context,
@@ -143,164 +135,126 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// ===== Selected Car Card (نفس الثيم) =====
-            Container(
-              width: double.infinity,
+      body: loadingCar
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.lightBlue.shade50,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.lightBlue.shade100),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.lightBlue,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.directions_car,
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "$carName\n$dailyPrice ₪ per day",
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.3,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// ===== Dates =====
-            _card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Rental Dates",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
+              children: [
+                _panel(
+                  child: Row(
                     children: [
-                      Expanded(
-                        child: _dateTile(
-                          title: "Start",
-                          value: _fmt(startDate),
-                          icon: Icons.play_circle_fill,
-                          onTap: () => _pickDate(isStart: true),
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.directions_car_filled_outlined,
+                          color: colors.primary,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _dateTile(
-                          title: "End",
-                          value: _fmt(endDate),
-                          icon: Icons.stop_circle,
-                          onTap: () => _pickDate(isStart: false),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              carName.isEmpty ? 'No car selected' : carName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              dailyPrice <= 0
+                                  ? 'Go back and choose a vehicle'
+                                  : '$dailyPrice ILS per day',
+                              style: const TextStyle(color: Colors.black54),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// ===== Summary =====
-            _card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Summary",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _summaryRow("Daily price", "$dailyPrice ₪"),
-                  const SizedBox(height: 8),
-                  _summaryRow(
-                    "Total days",
-                    totalDays == 0 ? "-" : "$totalDays",
-                  ),
-                  const Divider(height: 22),
-                  _summaryRow(
-                    "Total",
-                    totalDays == 0 ? "-" : "$totalPrice ₪",
-                    bold: true,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 22),
-
-            /// ===== Continue =====
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: canContinue ? _continue : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade800,
-                  disabledBackgroundColor: Colors.blueGrey.shade200,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                ),
+                const SizedBox(height: 14),
+                _panel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Rental Dates',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _dateTile(
+                              title: 'Pickup',
+                              value: _fmt(startDate),
+                              icon: Icons.calendar_today_outlined,
+                              onTap: () => _pickDate(isStart: true),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _dateTile(
+                              title: 'Return',
+                              value: _fmt(endDate),
+                              icon: Icons.event_available_outlined,
+                              onTap: () => _pickDate(isStart: false),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                child: const Text(
-                  "Continue",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                const SizedBox(height: 14),
+                _panel(
+                  child: Column(
+                    children: [
+                      _summaryRow('Daily price', '$dailyPrice ILS'),
+                      const SizedBox(height: 10),
+                      _summaryRow(
+                        'Total days',
+                        totalDays == 0 ? '-' : '$totalDays',
+                      ),
+                      const Divider(height: 26),
+                      _summaryRow(
+                        'Total',
+                        totalDays == 0 ? '-' : '$totalPrice ILS',
+                        bold: true,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: canContinue ? _continue : null,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('Continue'),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _card({required Widget child}) {
+  Widget _panel({required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE6E8F0)),
       ),
       child: child,
     );
@@ -312,44 +266,33 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final isEmpty = value == "Select date";
+    final colors = Theme.of(context).colorScheme;
+    final empty = value == 'Select date';
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.blue.shade100),
+          color: colors.primary.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colors.primary.withValues(alpha: 0.16)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.blue.shade700),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: isEmpty ? Colors.grey : Colors.blue.shade800,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            Icon(icon, color: colors.primary),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: empty ? Colors.black45 : colors.primary,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black45),
           ],
         ),
       ),
@@ -363,13 +306,13 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         Text(
           label,
           style: TextStyle(
-            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+            fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
           ),
         ),
       ],

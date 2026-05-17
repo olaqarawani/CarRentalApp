@@ -1,9 +1,10 @@
 import 'package:car_rental_appp/screens/customer/create_booking_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/constants.dart';
 import '../models/car.dart';
 import '../services/api_service.dart';
-import '../core/constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class CarDetailsScreen extends StatefulWidget {
   final int carId;
@@ -58,123 +59,137 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
   }
 
   Widget _content(BuildContext context, Car car) {
+    final colors = Theme.of(context).colorScheme;
+
     return CustomScrollView(
       slivers: [
         SliverAppBar(
           pinned: true,
-          expandedHeight: 260,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          expandedHeight: 300,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          foregroundColor: const Color(0xFF111827),
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,
               children: [
                 car.image.isEmpty
-                    ? Container(color: Colors.grey.shade300)
+                    ? Container(color: const Color(0xFFE2E8F0))
                     : Image.network(
                         '$imagesUrl/${car.image}',
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(color: Colors.grey.shade300),
+                        errorBuilder: (_, error, stackTrace) =>
+                            Container(color: const Color(0xFFE2E8F0)),
                       ),
-                Container(
+                DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.25),
-                        Colors.black.withOpacity(0.05),
-                        Colors.black.withOpacity(0.35),
+                        Colors.black.withValues(alpha: 0.08),
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.58),
                       ],
                     ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 18,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StatusBadge(available: car.available),
+                      const SizedBox(height: 10),
+                      Text(
+                        car.type,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         ),
-
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 26),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  car.type,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
                 Row(
                   children: [
-                    _pill(car.type),
-                    const SizedBox(width: 10),
-                    _pill(
-                      car.available ? 'Available' : 'Not Available',
-                      bg: car.available
-                          ? const Color(0xFFE7F8EE)
-                          : const Color(0xFFFFE8E6),
-                      fg: car.available
-                          ? const Color(0xFF12B76A)
-                          : const Color(0xFFF04438),
+                    Expanded(
+                      child: _InfoCard(
+                        icon: Icons.payments_outlined,
+                        label: 'Daily price',
+                        value: '${car.pricePerDay} ILS',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _InfoCard(
+                        icon: Icons.event_available_outlined,
+                        label: 'Booking',
+                        value: car.available ? 'Open' : 'Closed',
+                      ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 18),
-
+                const SizedBox(height: 20),
                 const Text(
                   'Description',
-                  style: TextStyle(fontWeight: FontWeight.w900),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   car.description.isEmpty
                       ? 'No description available.'
                       : car.description,
-                ),
-
-                const SizedBox(height: 22),
-
-                _priceBox(car),
-
-                const SizedBox(height: 16),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: car.available
-                        ? () async {
-                            final prefs = await SharedPreferences.getInstance();
-
-                            await prefs.setInt('booking_car_id', car.id);
-                            await prefs.setString('booking_car_name', car.type);
-                            await prefs.setInt(
-                              'booking_daily_price',
-                              car.pricePerDay,
-                            );
-
-                            if (!context.mounted) return;
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const CreateBookingScreen(),
-                              ),
-                            );
-                          }
-                        : null,
-
-                    child: const Text('Book Now'),
+                  style: const TextStyle(
+                    color: Color(0xFF475569),
+                    height: 1.45,
                   ),
                 ),
+                const SizedBox(height: 22),
+                FilledButton.icon(
+                  onPressed: car.available
+                      ? () async {
+                          final prefs = await SharedPreferences.getInstance();
+
+                          await prefs.setInt('booking_car_id', car.id);
+                          await prefs.setString('booking_car_name', car.type);
+                          await prefs.setInt(
+                            'booking_daily_price',
+                            car.pricePerDay,
+                          );
+
+                          if (!context.mounted) return;
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateBookingScreen(),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: const Text('Book Now'),
+                ),
+                if (!car.available) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'This car is currently unavailable for booking.',
+                    style: TextStyle(color: colors.error),
+                  ),
+                ],
               ],
             ),
           ),
@@ -182,47 +197,70 @@ class _CarDetailsScreenState extends State<CarDetailsScreen> {
       ],
     );
   }
+}
 
-  Widget _priceBox(Car car) {
+class _StatusBadge extends StatelessWidget {
+  final bool available;
+
+  const _StatusBadge({required this.available});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: available ? const Color(0xFFE8FFF7) : const Color(0xFFFFEDEE),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        available ? 'Available' : 'Unavailable',
+        style: TextStyle(
+          color: available ? const Color(0xFF047857) : const Color(0xFFB42318),
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE6E8F0)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFDDE5ED)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.payments_outlined),
-          const SizedBox(width: 10),
-          const Text(
-            'Price per day',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
-          const Spacer(),
+          Icon(icon, color: colors.primary),
+          const SizedBox(height: 10),
           Text(
-            '${car.pricePerDay} ₪',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            label,
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _pill(
-    String text, {
-    Color bg = const Color(0xFFEFF1FF),
-    Color fg = const Color(0xFF4C5FFF),
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: fg, fontWeight: FontWeight.w900, fontSize: 12),
       ),
     );
   }

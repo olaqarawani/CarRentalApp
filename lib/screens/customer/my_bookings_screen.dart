@@ -61,9 +61,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 }
 
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text("Error: ${snapshot.error}"),
-                  );
+                  return Center(child: Text("Error: ${snapshot.error}"));
                 }
 
                 final bookings = snapshot.data ?? [];
@@ -75,7 +73,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: bookings.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final b = bookings[index];
 
@@ -84,8 +83,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                     final start = _fmtDate(b["start_date"]);
                     final end = _fmtDate(b["end_date"]);
                     final total = "${b["total_price"]} \$";
-                    final status =
-                        (b["status"] ?? "").toString().toLowerCase();
+                    final status = (b["status"] ?? "").toString().toLowerCase();
 
                     return InkWell(
                       borderRadius: BorderRadius.circular(16),
@@ -94,8 +92,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => BookingDetailsScreen(
-                              bookingId:
-                                  int.parse(b["id"].toString()),
+                              bookingId: int.parse(b["id"].toString()),
                             ),
                           ),
                         );
@@ -109,11 +106,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border:
-                              Border.all(color: Colors.grey.shade200),
+                          border: Border.all(color: Colors.grey.shade200),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -125,8 +121,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Colors.blue.shade50,
-                                borderRadius:
-                                    BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Icon(
                                 Icons.directions_car,
@@ -136,8 +131,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     carName,
@@ -150,21 +144,22 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                                   Text(
                                     "$start → $end",
                                     style: const TextStyle(
-                                        color: Colors.black54),
+                                      color: Colors.black54,
+                                    ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     "Pickup: $pickup",
                                     style: const TextStyle(
-                                        color: Colors.black54),
+                                      color: Colors.black54,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 10),
                             Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   total,
@@ -201,29 +196,25 @@ class _StatusChip extends StatelessWidget {
     final bg = isApproved
         ? Colors.green.shade50
         : isRejected
-            ? Colors.red.shade50
-            : Colors.orange.shade50;
+        ? Colors.red.shade50
+        : Colors.orange.shade50;
 
     final fg = isApproved
         ? Colors.green.shade700
         : isRejected
-            ? Colors.red.shade700
-            : Colors.orange.shade800;
+        ? Colors.red.shade700
+        : Colors.orange.shade800;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: fg.withOpacity(0.3)),
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
       ),
       child: Text(
         status,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: fg,
-          fontSize: 12,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w700, color: fg, fontSize: 12),
       ),
     );
   }

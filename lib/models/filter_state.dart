@@ -1,9 +1,9 @@
 class FilterState {
-  String type;        
-  double minPrice;   
-  double maxPrice;    
-  bool availableOnly; 
-  String sort;        
+  String type;
+  double minPrice;
+  double maxPrice;
+  bool availableOnly;
+  String sort;
 
   FilterState({
     this.type = 'All',
@@ -14,12 +14,12 @@ class FilterState {
   });
 
   FilterState copy() => FilterState(
-        type: type,
-        minPrice: minPrice,
-        maxPrice: maxPrice,
-        availableOnly: availableOnly,
-        sort: sort,
-      );
+    type: type,
+    minPrice: minPrice,
+    maxPrice: maxPrice,
+    availableOnly: availableOnly,
+    sort: sort,
+  );
 
   Map<String, String> toQueryParams() {
     final Map<String, String> params = {};
@@ -36,7 +36,7 @@ class FilterState {
     }
 
     if (sort != 'None') {
-      params['sort'] = sort; 
+      params['sort'] = sort;
     }
 
     return params;

@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
-import 'manage_cars_screen.dart';
-import 'manage_bookings_screen.dart' ;
-import 'admin_profile_screen.dart';
 import 'package:car_rental_appp/core/session_manager.dart';
 import 'package:car_rental_appp/screens/auth/home_screen.dart';
+import 'package:flutter/material.dart';
 
+import '../../core/constants.dart';
+import '../../widgets/profile_avatar_button.dart';
+import 'admin_profile_screen.dart';
+import 'manage_bookings_screen.dart';
+import 'manage_cars_screen.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -15,6 +17,7 @@ class AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<AdminHome> {
   String adminName = 'Administrator';
+  String profileImage = '';
 
   @override
   void initState() {
@@ -23,145 +26,86 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Future<void> _loadAdminName() async {
-    final name = await SessionManager.getName();
+    final session = await SessionManager.getSession();
     if (!mounted) return;
     setState(() {
-      adminName = name ?? 'Administrator';
+      adminName = (session['name'] ?? 'Administrator').toString();
+      profileImage = (session['profileImage'] ?? '').toString();
     });
   }
 
-  void _showAdminMenu(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _logoutToHome() async {
+    await SessionManager.logout();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (_) => false,
+    );
+  }
+
+  Future<void> _handleBack() async {
+    final shouldLogout = await showDialog<bool>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              child: Text(
-                adminName.isNotEmpty ? adminName[0].toUpperCase() : 'A',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            title: Text(adminName),
-            subtitle: const Text('Administrator Account'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AdminProfileScreen(),
-                ),
-              );
-            },
+      builder: (_) => AlertDialog(
+        title: const Text('Logout?'),
+        content: const Text('Leaving the dashboard will end your session.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Stay'),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
-            ),
-            subtitle: const Text('End current session'),
-            onTap: () async {
-              await SessionManager.logout();
-              if (!context.mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (_) => false,
-              );
-            },
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Logout'),
           ),
         ],
       ),
     );
+
+    if (shouldLogout == true) await _logoutToHome();
   }
 
-  Widget _dashboardCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required List<Color> gradientColors,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 150,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: gradientColors.last.withOpacity(0.35),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
+  Future<void> _openProfile() async {
+    Navigator.pop(context);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminProfileScreen()),
+    );
+    await _loadAdminName();
+  }
+
+  void _showAdminMenu() {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: CircleAvatar(
+                backgroundImage: profileImage.isNotEmpty
+                    ? NetworkImage('$imagesUrl/$profileImage')
+                    : null,
+                child: profileImage.isEmpty
+                    ? Text(
+                        adminName.isNotEmpty ? adminName[0].toUpperCase() : 'A',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      )
+                    : null,
+              ),
+              title: Text(adminName),
+              subtitle: const Text('Manager account'),
+              onTap: _openProfile,
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: _logoutToHome,
             ),
           ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 34,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Tap to manage →',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -169,73 +113,82 @@ class _AdminHomeState extends State<AdminHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => _showAdminMenu(context),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        child: ListView(
-          children: [
+    final colors = Theme.of(context).colorScheme;
 
-            Text(
-              'Welcome back, $adminName !',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1565C0),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Dashboard'),
+          actions: [
+            ProfileAvatarButton(
+              imageName: profileImage,
+              name: adminName,
+              onPressed: _showAdminMenu,
+            ),
+            IconButton(
+              tooltip: 'Account',
+              icon: const Icon(Icons.more_vert),
+              onPressed: _showAdminMenu,
+            ),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: colors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome back, $adminName',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Manage the fleet and review customer reservations.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            
-
-            const SizedBox(height: 110),
-
+            const SizedBox(height: 24),
             const Text(
               'Management Tools',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
-            const SizedBox(height: 20),
-
-            _dashboardCard(
+            const SizedBox(height: 14),
+            _DashboardTile(
               icon: Icons.directions_car_filled_outlined,
               title: 'Cars Management',
-              description:
-                  'Add, update, or remove cars from the rental system.',
-              gradientColors: const [
-                Color(0xFF42A5F5),
-                Color(0xFF1565C0),
-              ],
+              description: 'Add, edit, or remove cars from the catalog.',
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ManageCarsScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ManageCarsScreen()),
                 );
               },
             ),
-
-            const SizedBox(height: 26),
-
-            _dashboardCard(
+            const SizedBox(height: 12),
+            _DashboardTile(
               icon: Icons.event_note_outlined,
               title: 'Booking Management',
-              description:
-                  'Review reservations, approve requests, and track rentals.',
-              gradientColors: const [
-                Color(0xFF66BB6A),
-                Color(0xFF2E7D32),
-              ],
+              description: 'Approve, reject, and track booking requests.',
               onTap: () {
                 Navigator.push(
                   context,
@@ -246,6 +199,78 @@ class _AdminHomeState extends State<AdminHome> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const _DashboardTile({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: colors.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
         ),
       ),
     );

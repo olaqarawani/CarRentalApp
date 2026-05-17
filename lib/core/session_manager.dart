@@ -6,19 +6,45 @@ class SessionManager {
   static const _role = 'role';
   static const _name = 'name';
   static const _email = 'email';
+  static const _token = 'token';
+  static const _profileImage = 'profile_image';
 
   static Future<void> saveSession(
-    int userId,
+    dynamic userId,
     String role,
     String name,
     String email,
+    String token,
+    [String profileImage = '']
   ) async {
+    final parsedUserId = userId is int
+        ? userId
+        : int.tryParse(userId.toString()) ?? 0;
+    if (parsedUserId <= 0) {
+      throw ArgumentError('Invalid user id');
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_loggedIn, true);
-    await prefs.setInt(_userId, userId);
+    await prefs.setInt(_userId, parsedUserId);
     await prefs.setString(_role, role);
     await prefs.setString(_name, name);
     await prefs.setString(_email, email);
+    await prefs.setString(_token, token);
+    await prefs.setString(_profileImage, profileImage);
+  }
+
+  static Future<void> updateProfile({
+    required String name,
+    required String email,
+    required String token,
+    required String profileImage,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_name, name);
+    await prefs.setString(_email, email);
+    await prefs.setString(_token, token);
+    await prefs.setString(_profileImage, profileImage);
   }
 
   static Future<bool> isLoggedIn() async {
@@ -41,11 +67,20 @@ class SessionManager {
     return prefs.getString(_email);
   }
 
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_token);
+  }
+
+  static Future<String?> getProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_profileImage);
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
-
 
   static Future<int?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -65,6 +100,8 @@ class SessionManager {
       'role': prefs.getString(_role),
       'name': prefs.getString(_name),
       'email': prefs.getString(_email),
+      'token': prefs.getString(_token),
+      'profileImage': prefs.getString(_profileImage),
     };
   }
 }

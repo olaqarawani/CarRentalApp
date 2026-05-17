@@ -1,96 +1,134 @@
 import 'package:flutter/material.dart';
-import '../models/car.dart';
+
 import '../core/constants.dart';
+import '../models/car.dart';
 
 class CarCard extends StatelessWidget {
   final Car car;
   final VoidCallback onTap;
 
-  const CarCard({
-    super.key,
-    required this.car,
-    required this.onTap,
-  });
+  const CarCard({super.key, required this.car, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFDDE5ED)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                ),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: car.image.isEmpty
-                      ? Container(color: Colors.grey.shade200)
-                      : Image.network(
-                          '$imagesUrl/${car.image}',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey.shade200,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.image_not_supported),
-                          ),
-                        ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      car.image.isEmpty
+                          ? Container(color: const Color(0xFFE2E8F0))
+                          : Image.network(
+                              '$imagesUrl/${car.image}',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, error, stackTrace) => Container(
+                                color: const Color(0xFFE2E8F0),
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.image_not_supported),
+                              ),
+                            ),
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: _StatusPill(available: car.available),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      car.type,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
+              Padding(
+                padding: const EdgeInsets.all(13),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            car.type,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF111827),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '${car.pricePerDay} ILS',
+                            style: TextStyle(
+                              color: colors.primary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      car.description,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF64748B),
+                        height: 1.35,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${car.pricePerDay} ₪ / day',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _Spec(icon: Icons.payments_outlined, label: 'Per day'),
+                        const SizedBox(width: 12),
+                        _Spec(icon: Icons.event_available, label: 'Flexible'),
+                        const Spacer(),
+                        Icon(
+                          Icons.arrow_forward,
+                          color: colors.primary,
+                          size: 20,
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 6),
-
-              Row(
-                children: [
-                  _pill(
-                    text: car.available ? 'Available' : 'Not Available',
-                    color: car.available ? Colors.green : Colors.red,
-                    bg: car.available
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                car.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
+                  ],
                 ),
               ),
             ],
@@ -99,12 +137,18 @@ class CarCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _pill({
-    required String text,
-    required Color color,
-    required Color bg,
-  }) {
+class _StatusPill extends StatelessWidget {
+  final bool available;
+
+  const _StatusPill({required this.available});
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = available ? const Color(0xFFE8FFF7) : const Color(0xFFFFEDEE);
+    final fg = available ? const Color(0xFF047857) : const Color(0xFFB42318);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -112,13 +156,35 @@ class CarCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
+        available ? 'Available' : 'Unavailable',
+        style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w900),
       ),
+    );
+  }
+}
+
+class _Spec extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _Spec({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF64748B)),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

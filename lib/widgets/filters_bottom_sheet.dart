@@ -39,7 +39,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
               _header(context),
               const SizedBox(height: 16),
 
-              const Text('Car Type', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'Car Type',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 8),
               _dropdown(
                 value: state.type,
@@ -48,7 +51,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
               ),
 
               const SizedBox(height: 16),
-              const Text('Price Range (₪/day)', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'Price Range (₪/day)',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 10),
               RangeSlider(
                 min: 0,
@@ -75,7 +81,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
               const SizedBox(height: 16),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Available only', style: TextStyle(fontWeight: FontWeight.w800)),
+                title: const Text(
+                  'Available only',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
                 subtitle: const Text('Show only available cars'),
                 value: state.availableOnly,
                 onChanged: (v) => setState(() => state.availableOnly = v),
@@ -148,7 +157,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet> {
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          items: items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+          items: items
+              .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),

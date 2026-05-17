@@ -4,7 +4,7 @@ class Car {
   final int pricePerDay;
   final bool available;
   final String description;
-  final String image; 
+  final String image;
 
   Car({
     required this.id,
@@ -16,24 +16,21 @@ class Car {
   });
 
   factory Car.fromJson(Map<String, dynamic> json) {
-    int parseInt(dynamic v) {
-  if (v == null) return 0;
-  if (v is int) return v;
-  if (v is double) return v.round();
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.round();
 
-  final s = v.toString();
-  if (s.contains('.')) {
-    return double.tryParse(s)?.round() ?? 0;
-  }
-  return int.tryParse(s) ?? 0;
-}
+      final text = value.toString();
+      if (text.contains('.')) return double.tryParse(text)?.round() ?? 0;
+      return int.tryParse(text) ?? 0;
+    }
 
-
-    bool parseBool(dynamic v) {
-      if (v == null) return false;
-      if (v is bool) return v;
-      final s = v.toString();
-      return s == '1' || s.toLowerCase() == 'true';
+    bool parseBool(dynamic value) {
+      if (value == null) return false;
+      if (value is bool) return value;
+      final text = value.toString().toLowerCase();
+      return text == '1' || text == 'true';
     }
 
     return Car(
@@ -42,8 +39,6 @@ class Car {
       pricePerDay: parseInt(json['price_per_day']),
       available: parseBool(json['available']),
       description: (json['description'] ?? '').toString(),
-
-      // 🔥 FIX HERE
       image: (json['image'] ?? '').toString(),
     );
   }
